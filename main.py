@@ -14,12 +14,23 @@ from statsmodels.stats.stattools import durbin_watson
 
 #import and basic cleaning
 file_path=os.path.join(os.getcwd(), 'MVE_Assignment_DataSet.xlsx')
-data = pd.read_excel(file_path,header=1)
+columns = ['Unnamed: 0',
+           #'EN.ATM.METH.AG.KT.CE',
+           #'EN.ATM.NOXE.AG.KT.CE',
+           #'AG.PRD.CROP.XD',
+           #'EN.ATM.CO2E.KT',
+           'mean+tmp',
+           'mean_pre',
+           'SP.POP.TOTL',
+           'NV.AGR.TOTL.KD']
+
+data = pd.read_excel(file_path, header=1, usecols=columns)
+
 data.rename(columns={'Unnamed: 0': 'year',
-                     'EN.ATM.METH.AG.KT.CE' : 'methane' ,
-                     'EN.ATM.NOXE.AG.KT.CE' :  'nox' ,
-                     'AG.PRD.CROP.XD' :  'crop_production' ,
-                     'EN.ATM.CO2E.KT' :  'co2',
+                     #'EN.ATM.METH.AG.KT.CE' : 'methane' ,
+                     #'EN.ATM.NOXE.AG.KT.CE' :  'nox' ,
+                     #'AG.PRD.CROP.XD' :  'crop_production' ,
+                     #'EN.ATM.CO2E.KT' :  'co2',
                      'mean+tmp' :  'mean_temp',
                      'mean_pre': 'mean_rainfall',
                      'SP.POP.TOTL' : 'population',
