@@ -103,10 +103,10 @@ for column_name in data.columns:
     model = sm.OLS(y, y_lag)
     results = model.fit()
     
-    plot_acf(results.resid, lags=10,title=f'ACF - {col} (Residuals)')
+    plot_acf(results.resid, lags=10,title=f'ACF - {column_name} (Residuals)')
     output_directory = 'graphs'
     os.makedirs(output_directory, exist_ok=True)
-    output_file_path = os.path.join(output_directory, f'{col}_residuals_acf.png')
+    output_file_path = os.path.join(output_directory, f'{column_name}_residuals_acf.png')
     plt.savefig(output_file_path)
 
     # Calculate and print Durbin-Watson statistic
@@ -171,5 +171,3 @@ for col in data.columns:
                                                        'KPSS': ["--"],
                                                        'Zivot Andrews': ["--"]})], ignore_index=True)
 
-# Display the results DataFrame
-print(df_results)
