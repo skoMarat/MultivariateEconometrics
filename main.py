@@ -9,8 +9,10 @@ from statsmodels.tsa.stattools import adfuller, kpss, zivot_andrews
 from arch.unitroot import PhillipsPerron
 import statsmodels.api as sm
 from statsmodels.stats.stattools import durbin_watson
-
-
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
+from tabulate import tabulate
+from arch.unitroot import PhillipsPerron
 
 #import and basic cleaning
 file_path=os.path.join(os.getcwd(), 'MVE_Assignment_DataSet.xlsx')
@@ -171,3 +173,81 @@ for col in data.columns:
                                                        'KPSS': ["--"],
                                                        'Zivot Andrews': ["--"]})], ignore_index=True)
 
+#Part 4
+# Assuming the data is I(1), then in the first part we are performing Engle-Granger, ADF and Philip-Ouliaris tests:
+
+results = []
+
+# Engle-Granger Cointegration Test
+for col1 in data.columns:
+    for col2 in data.columns:
+        if col1 != col2:
+            eg_test_stat, eg_p_value, _ = coint(data[col1], data[col2], trend='c')
+            results.append((f"Engle-Granger Test ({col1}, {col2})", eg_test_stat, eg_p_value))
+
+# Johansen Cointegration Test
+johansen_results = coint_johansen(data.values, det_order=1, k_ar_diff=1)
+trace_statistic = johansen_results.lr1
+max_eig_statistic = johansen_results.lr2
+trace_critical_values = johansen_results.cvm[:, 1]
+max_eig_critical_values = johansen_results.cvm[:, 0]
+results.append(("Johansen Trace Test", trace_statistic, "N/A"))
+results.append(("Johansen Max Eigenvalue Test", max_eig_statistic, "N/A"))
+
+# Phillips-Ouliaris Cointegration Test 
+for col1 in data.columns:
+    for col2 in data.columns:
+        if col1 != col2:
+            diff_series = data[col1] - data[col2]
+            lags = 1  # You can adjust the number of lags as needed
+            lagged_diff = diff_series.shift(1).dropna()
+            lagged_levels = data[col1].shift(1).dropna(), data[col2].shift(1).dropna()
+
+            # Regression
+            model = PhillipsPerron(lagged_diff, trend='c', lags=lags)
+            po_test_stat = model.stat
+            po_p_value = model.pvalue
+
+            results.append((f"Phillips-Ouliaris Test ({col1}, {col2})", po_test_stat, po_p_value))
+
+# ADF Cointegration Test
+for col1 in data.columns:
+    for col2 in data.columns:
+        if col1 != col2:
+            adf_test_result = adfuller(data[col1] - data[col2], autolag='AIC')
+            adf_test_stat = adf_test_result[0]
+            adf_p_value = adf_test_result[1]
+            critical_values = adf_test_result[4]
+            results.append((f"ADF Test ({col1}, {col2})", adf_test_stat, adf_p_value, critical_values))
+
+# Results
+columns = ["Test", "Test Statistic", "P-Value", "Critical Values"]
+df_results = pd.DataFrame(results, columns=columns)
+
+print(tabulate(df_results, headers='keys', tablefmt='fancy_grid'))
+
+# In the second part, we perform Maximum Likelihood based tests based on Johansen Trace and Maximum Eigenvalue tests:
+results = []
+
+# Johansen Cointegration Test
+johansen_results = coint_johansen(data.values, det_order=1, k_ar_diff=1)
+
+# Trace Statistic and Critical Values
+trace_statistic = johansen_results.lr1
+trace_critical_values = johansen_results.cvt[:, 2]  # Adjust the index based on your number of variables
+
+# Maximum Eigenvalue Statistic and Critical Values
+max_eig_statistic = johansen_results.lr2
+max_eig_critical_values = johansen_results.cvm[:, 2]  # Adjust the index based on your number of variables
+
+# Eigenvalues
+eigenvalues = johansen_results.eig
+
+results.append(("Johansen Trace Test", trace_statistic, trace_critical_values))
+results.append(("Johansen Max Eigenvalue Test", max_eig_statistic, max_eig_critical_values))
+
+# Results
+columns = ["Test", "Test Statistic", "Critical Values"]
+df_results = pd.DataFrame(results, columns=columns)
+
+print(tabulate(df_results, headers='keys', tablefmt='fancy_grid'))
