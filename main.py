@@ -12,7 +12,11 @@ from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
 from tabulate import tabulate
-from arch.unitroot import PhillipsPerron
+from arch.unitroot import ADF, PhillipsPerron, KPSS, ZivotAndrews
+
+# Get and set the current working directory
+working_directory = os.path.dirname(__file__)
+os.chdir(working_directory)
 
 #import and basic cleaning
 file_path=os.path.join(os.getcwd(), 'MVE_Assignment_DataSet.xlsx')
@@ -127,51 +131,86 @@ for column_name in data.columns:
 
 
 ### Testing 
-df_results = pd.DataFrame(columns=['Variable', 'Deterministic Component', 'DF', 'ADF', 'PP', 'KPSS', 'Zivot Andrews'])
 
-for col in data.columns:
+# Define function to apply various tests for a unit root in time series: Dickey-Fuller, Augmented Dickey-Fuller, Phillips Perron, and KPSS. Also correcting for possible deterministic components in the data: 'n' (no deterministic components), 'c' (a constant), 'ct' (a constant and trend.)
+def unit_root_test(data: pd.DataFrame, diff: int):
+    
+    df_results = pd.DataFrame(columns=['Variable', 'Differenced', 'Deterministic Component', 'DF', 'ADF', 'PP', 'KPSS'])
+    
+    differences = 0
+    if diff == 0:
+        data = data
+    else:
+        for i in range(diff):
+            data = data.diff().dropna()
+            differences += 1
+      
+    for col in data.columns:
     # 1. c
-    df_df= adfuller(data[col],autolag=None,maxlag=0)
-    df_adf = adfuller(data[col], autolag='AIC', regression='c')
-    p_value_pp = PhillipsPerron(data[col], trend="n").pvalue
-    df_kpss = kpss(data[col], regression='c')
-    #df_za = zivot_andrews(data[col], regression='c')
-    df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
-                                                       'Deterministic Component': ['c'],
-                                                       'DF': [df_df[1]],
-                                                       'ADF': [df_adf[1]],
-                                                       'PP': [p_value_pp],
-                                                       'KPSS': ["--"],
-                                                       'Zivot Andrews': "--"#[df_za[1]]
-                                                       })
-                            ], ignore_index=True)
+        df_df= adfuller(data[col],autolag=None,maxlag=0, regression='c')
+        df_adf = adfuller(data[col], autolag='AIC', regression='c')
+        df_dft = ADF(data[col], trend = 'c', lags=0).pvalue
+        df_adft = ADF(data[col], trend = 'c', lags=5).pvalue 
+        p_value_pp = PhillipsPerron(data[col], trend="c").pvalue
+        df_kpss = kpss(data[col], regression='c')
+        df_kpsst = KPSS(data[col], lags=5, trend = 'c').pvalue
+        df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
+                                                          'Differenced': differences,
+                                                          'Deterministic Component': ['c'],
+                                                          'DF': [df_df[1]],
+                                                          'ADF': [df_adf[1]],
+                                                          'PP': [p_value_pp],
+                                                          'KPSS': [df_kpss[1]]
+                                                           })], ignore_index=True)
+    
+        # 2. ct
+        df_df= adfuller(data[col],autolag=None,maxlag=0, regression='ct')
+        df_adf = adfuller(data[col], autolag='AIC', regression='ct')
+        df_dft = ADF(data[col], trend = 'ct', lags=0).pvalue
+        df_adft = ADF(data[col], trend = 'ct', lags=5).pvalue 
+        p_value_pp = PhillipsPerron(data[col], trend="ct").pvalue
+        df_kpss = kpss(data[col], regression='ct')
+        df_kpsst = KPSS(data[col], lags=5, trend = 'ct').pvalue
+        df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
+                                                          'Differenced': differences,
+                                                          'Deterministic Component': ['ct'],
+                                                          'DF': [df_df[1]],
+                                                          'ADF': [df_adf[1]],
+                                                          'PP': [p_value_pp],
+                                                          'KPSS': [df_kpss[1]]
+                                                           })], ignore_index=True)
+    
+        # 3. n
+        df_df= adfuller(data[col],autolag=None,maxlag=0, regression='n')
+        df_adf = adfuller(data[col], autolag='AIC', regression='n')
+        df_dft = ADF(data[col], trend = 'n', lags=0).pvalue
+        df_adft = ADF(data[col], trend = 'n', lags=5).pvalue 
+        p_value_pp = PhillipsPerron(data[col], trend="n").pvalue
+        df_kpss = kpss(data[col])
+        df_kpsst = KPSS(data[col], lags=5).pvalue
+        df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
+                                                          'Differenced': differences,
+                                                          'Deterministic Component': ['n'],
+                                                          'DF': [df_df[1]],
+                                                          'ADF': [df_adf[1]],
+                                                          'PP': [p_value_pp],
+                                                          'KPSS': [df_kpss[1]]
+                                                           })], ignore_index=True)
 
-    # 2. ct
-    df_df= adfuller(data[col],autolag=None,maxlag=0)
-    df_adf = adfuller(data[col], autolag='AIC', regression='ct')
-    p_value_pp = PhillipsPerron(data[col], trend="ct").pvalue
-    df_kpss = kpss(data[col], regression='ct')
-    #df_za = zivot_andrews(data[col], regression='ct')
-    df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
-                                                       'Deterministic Component': ['ct'],
-                                                       'DF': [df_df[1]],
-                                                       'ADF': [df_adf[1]],
-                                                       'PP': [p_value_pp],
-                                                       'KPSS': ["--"],
-                                                       'Zivot Andrews':"--" #[df_za[1]]
-                                                       })], ignore_index=True)
+    return df_results
 
-    # 3. n
-    df_df= adfuller(data[col],autolag=None,maxlag=0)
-    df_adf = adfuller(data[col], autolag='AIC', regression='n')
-    p_value_pp = PhillipsPerron(data[col], trend="n").pvalue
-    df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
-                                                       'Deterministic Component': ['n'],
-                                                       'DF': [df_df[1]],
-                                                       'ADF': [df_adf[1]],
-                                                       'PP': [p_value_pp],
-                                                       'KPSS': ["--"],
-                                                       'Zivot Andrews': ["--"]})], ignore_index=True)
+# Taking logarithms to stabilize variance and distribution
+data[['population', 'agricultural_GDP']] = np.log(data[['population', 'agricultural_GDP']])
+
+# Test for unit roots in level data, 1st differences, and 2nd differences
+for i in range(3):
+    global_variable_name = f"df_result_diff{i}"
+    globals()[global_variable_name] = unit_root_test(data, i).round(4)
+    print(globals()[global_variable_name])
+
+
+
+
 
 #Part 4
 # Assuming the data is I(1), then in the first part we are performing Engle-Granger, ADF and Philip-Ouliaris tests:
