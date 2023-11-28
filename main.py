@@ -11,6 +11,7 @@ import statsmodels.api as sm
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
+from statsmodels.tsa.stattools import coint
 from tabulate import tabulate
 from arch.unitroot import ADF, PhillipsPerron, KPSS, ZivotAndrews
 
@@ -146,7 +147,7 @@ def unit_root_test(data: pd.DataFrame, diff: int):
             differences += 1
       
     for col in data.columns:
-    # 1. c
+        # 1. c
         df_df= adfuller(data[col],autolag=None,maxlag=0, regression='c')
         df_adf = adfuller(data[col], autolag='AIC', regression='c')
         df_dft = ADF(data[col], trend = 'c', lags=0).pvalue
