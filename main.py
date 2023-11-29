@@ -11,7 +11,6 @@ import statsmodels.api as sm
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
-from statsmodels.tsa.stattools import coint
 from tabulate import tabulate
 from arch.unitroot import ADF, PhillipsPerron, KPSS, ZivotAndrews
 
@@ -71,34 +70,9 @@ for col in data.columns:
 
     plt.show()
 
+# Take the natural logarithm of population and agricultural GDP to stabilize variance and distribution
+data[['population', 'agricultural_GDP']] = np.log(data[['population', 'agricultural_GDP']])
 
-for col in data.columns:
-    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(18, 8))
-    # Original Series
-    axes[0, 0].plot(data[col])
-    axes[0, 0].set_title(f'Original - {col}')
-    plot_acf(data[col], lags=8, ax=axes[0, 1], title=f'ACF - {col} (Original)')
-    plot_pacf(data[col], lags=8, ax=axes[0, 2], title=f'PACF - {col} (Original)')
-
-    # First Difference
-    first_diff = np.diff(data[col])
-    axes[1, 0].plot(first_diff)
-    axes[1, 0].set_title(f'First Diff - {col}')
-    plot_acf(first_diff, lags=8, ax=axes[1, 1], title=f'ACF - {col} (First Diff)')
-    plot_pacf(first_diff, lags=8, ax=axes[1, 2], title=f'PACF - {col} (First Diff)')
-
-    # Second Difference
-    second_diff = np.diff(data[col], n=2)
-    axes[2, 0].plot(second_diff)
-    axes[2, 0].set_title(f'Second Diff - {col}')
-    plot_acf(second_diff, lags=8, ax=axes[2, 1], title=f'ACF - {col} (Second Diff)')
-    plot_pacf(second_diff, lags=8, ax=axes[2, 2], title=f'PACF - {col} (Second Diff)')
-
-    output_file_path = os.path.join(output_directory, f'{col}_p_acf.png')
-    plt.tight_layout()
-    plt.savefig(output_file_path)
-    plt.close()
-    
 
 #Part 3
 # Check for serial correlation of residuals
@@ -147,14 +121,11 @@ def unit_root_test(data: pd.DataFrame, diff: int):
             differences += 1
       
     for col in data.columns:
-        # 1. c
-        df_df= adfuller(data[col],autolag=None,maxlag=0, regression='c')
-        df_adf = adfuller(data[col], autolag='AIC', regression='c')
-        df_dft = ADF(data[col], trend = 'c', lags=0).pvalue
-        df_adft = ADF(data[col], trend = 'c', lags=5).pvalue 
+    # 1. c
+        df_df= adfuller(data[col],autolag=None, maxlag=0, regression='c')
+        df_adf = adfuller(data[col], autolag=None, maxlag=1, regression='c')
         p_value_pp = PhillipsPerron(data[col], trend="c").pvalue
         df_kpss = kpss(data[col], regression='c')
-        df_kpsst = KPSS(data[col], lags=5, trend = 'c').pvalue
         df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
                                                           'Differenced': differences,
                                                           'Deterministic Component': ['c'],
@@ -166,12 +137,9 @@ def unit_root_test(data: pd.DataFrame, diff: int):
     
         # 2. ct
         df_df= adfuller(data[col],autolag=None,maxlag=0, regression='ct')
-        df_adf = adfuller(data[col], autolag='AIC', regression='ct')
-        df_dft = ADF(data[col], trend = 'ct', lags=0).pvalue
-        df_adft = ADF(data[col], trend = 'ct', lags=5).pvalue 
+        df_adf = adfuller(data[col], autolag=None, maxlag=1, regression='ct')
         p_value_pp = PhillipsPerron(data[col], trend="ct").pvalue
         df_kpss = kpss(data[col], regression='ct')
-        df_kpsst = KPSS(data[col], lags=5, trend = 'ct').pvalue
         df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
                                                           'Differenced': differences,
                                                           'Deterministic Component': ['ct'],
@@ -183,12 +151,9 @@ def unit_root_test(data: pd.DataFrame, diff: int):
     
         # 3. n
         df_df= adfuller(data[col],autolag=None,maxlag=0, regression='n')
-        df_adf = adfuller(data[col], autolag='AIC', regression='n')
-        df_dft = ADF(data[col], trend = 'n', lags=0).pvalue
-        df_adft = ADF(data[col], trend = 'n', lags=5).pvalue 
+        df_adf = adfuller(data[col], autolag=None, maxlag=1, regression='n')
         p_value_pp = PhillipsPerron(data[col], trend="n").pvalue
         df_kpss = kpss(data[col])
-        df_kpsst = KPSS(data[col], lags=5).pvalue
         df_results = pd.concat([df_results, pd.DataFrame({'Variable': [col],
                                                           'Differenced': differences,
                                                           'Deterministic Component': ['n'],
@@ -200,17 +165,12 @@ def unit_root_test(data: pd.DataFrame, diff: int):
 
     return df_results
 
-# Taking logarithms to stabilize variance and distribution
-data[['population', 'agricultural_GDP']] = np.log(data[['population', 'agricultural_GDP']])
 
 # Test for unit roots in level data, 1st differences, and 2nd differences
 for i in range(3):
     global_variable_name = f"df_result_diff{i}"
     globals()[global_variable_name] = unit_root_test(data, i).round(4)
     print(globals()[global_variable_name])
-
-
-
 
 
 #Part 4
