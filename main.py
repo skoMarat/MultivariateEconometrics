@@ -22,14 +22,14 @@ os.chdir(working_directory)
 #import and basic cleaning
 file_path=os.path.join(os.getcwd(), 'MVE_Assignment_DataSet.xlsx')
 columns = ['Unnamed: 0',
-           'EN.ATM.METH.AG.KT.CE',
-           'EN.ATM.NOXE.AG.KT.CE',
+           #'EN.ATM.METH.AG.KT.CE',
+           #'EN.ATM.NOXE.AG.KT.CE',
            'AG.PRD.CROP.XD',
            'EN.ATM.CO2E.KT',
            'mean+tmp',
            'mean_pre',
-           'SP.POP.TOTL',
-           'NV.AGR.TOTL.KD'
+           #'SP.POP.TOTL',
+           #'NV.AGR.TOTL.KD'
            ]
 
 data = pd.read_excel(file_path, header=1, usecols=columns)
