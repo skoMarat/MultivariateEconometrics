@@ -12,7 +12,6 @@ import statsmodels.api as sm
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM, select_coint_rank
-from tabulate import tabulate
 
 
 # Get and set the current working directory
@@ -217,8 +216,8 @@ def cointegration_test(data:pd.DataFrame, y:str, x:list):
     johansen_df = pd.concat([data[y], data[x]], axis=1)
     trace_coint_result = select_coint_rank(endog=johansen_df, det_order=0, k_ar_diff=1, method='trace')
     maxeig_coint_result = select_coint_rank(endog=johansen_df, det_order=0, k_ar_diff=1, method='maxeig')
-    print(f"There are {trace_coint_result.rank} cointegrating vectors according to the Johensen Trace test")
-    print(f"There are {maxeig_coint_result.rank} cointegrating vectors according to the Johensen Maximum Eigenvalue test")
+    print(f"There are {trace_coint_result.rank} cointegrating vectors according to the Johansen Trace test")
+    print(f"There are {maxeig_coint_result.rank} cointegrating vectors according to the Johansen Maximum Eigenvalue test")
     print()
 
 # Testing for cointegration
@@ -233,10 +232,13 @@ def cointegration_regression(data: pd.DataFrame, y:str, x:list):
     dynamic_ols = DynamicOLS(data[y], data[x], lags=1).fit()
     fully_mod_ols = FullyModifiedOLS(data[y], data[x]).fit()
 
-    return static_ols.summary()
+    return static_ols.summary(), dynamic_ols.summary(), fully_mod_ols.summary()
 
+# Estimate cointegrating regressions
+for i in coint_relations:
+    for j in range(3):
+        print(cointegration_regression(data, coint_relations[i]['y'], coint_relations[i]['x'])[j])
 
-cointegration_regression(data, coint_relations['test 1']['y'], coint_relations['test 1']['x'])
 
 
 
