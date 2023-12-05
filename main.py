@@ -12,6 +12,7 @@ import statsmodels.api as sm
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM, select_coint_rank
+from statsmodels.tsa.stattools import coint
 
 
 # Get and set the current working directory
