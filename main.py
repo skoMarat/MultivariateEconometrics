@@ -113,14 +113,45 @@ for column_name in data.columns:
 #Part 4
 # Assuming the data is I(1), then in the first part we are performing Engle-Granger, ADF and Philip-Ouliaris tests:
 
-results = []
+# Engle-Granger and Phillips-Ouliaris Cointegration Test
+import itertools
 
-# Engle-Granger Cointegration Test
-for col1 in data.columns:
-    for col2 in data.columns:
-        if col1 != col2:
-            eg_test_stat, eg_p_value, _ = coint(data[col1], data[col2], trend='c')
-            results.append((f"Engle-Granger Test ({col1}, {col2})", eg_test_stat, eg_p_value))
+results_df = pd.DataFrame(columns=['Dependent Variable', 'Independent Variable', 'E-G Test Statistic', 'E-G P-Value', 'E-G Conclusion', 'P-O Test Statistic', 'P-O P-Value', 'P-O Conclusion'])
+
+# Get all combinations of columns for 2-way, 3-way, and 4-way combinations
+column_combinations = []
+for r in range(2, 5):
+    column_combinations += list(itertools.combinations(data.columns, r))
+
+# Engle-Granger and Phillips-Ouliaris Cointegration Test
+for combination in column_combinations:
+    eg_result = engle_granger(data[combination[0]], data[list(combination[1:])], trend='c')
+    eg_test_stat = eg_result.stat
+    eg_p_value = eg_result.pvalue
+    po_result = phillips_ouliaris(data[combination[0]], data[list(combination[1:])], trend='c', test_type='Zt')
+    po_test_stat = po_result.stat
+    po_p_value = po_result.pvalue
+    
+    eg_conclusion = 'Reject No Cointegration' if eg_p_value <= 0.05 else 'Fail to reject'
+    po_conclusion = 'Reject No Cointegration' if po_p_value <= 0.05 else 'Fail to reject'
+    
+    results_df = pd.concat([results_df, pd.DataFrame({'Dependent Variable': [combination[0]], 'Independent Variable': [', '.join(combination[1:])],
+                                                      'E-G Test Statistic': [eg_test_stat], 'E-G P-Value': [eg_p_value], 'E-G Conclusion': [eg_conclusion],
+                                                      'P-O Test Statistic': [po_test_stat], 'P-O P-Value': [po_p_value], 'P-O Conclusion': [po_conclusion]})], ignore_index=True)
+
+results_df
+
+
+## permutation test
+eg_result = engle_granger(data['co2'], data[['crop_production','mean_temp','mean_rainfall']], trend='c')
+eg_test_stat = eg_result.stat
+eg_p_value = eg_result.pvalue
+eg_p_value
+
+
+
+
+    
 
 # Johansen Cointegration Test
 johansen_results = coint_johansen(data.values, det_order=1, k_ar_diff=1)
